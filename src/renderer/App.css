@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://use.typekit.net/wyp3msi.css');
+
+* {
+    /* color: white; */
+}
+
+.background {
+    background-color: black;
+    background-image: url('https://gabirmotors.com/img/image.jpg');
+    background-attachment: fixed;
+    background-size: cover;
+}
+
+.background-c {
+    background-color: black;
+    background-image: url('https://i.gabirmotors.com/assets/other/carbon_fiber.jpg');
+    background-attachment: fixed;
+    background-size: cover;
+}
+
+.acumin {
+    font-family: acumin-pro-extra-condensed, sans-serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+/* width */
+::-webkit-scrollbar {
+    width: 5px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    background: none;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: #222222;
+    border-radius: 1px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: #444444;
+}
+
+#e5QmRKu2ajZ4_to {
+    animation: e5QmRKu2ajZ4_to__to 2100ms linear 1 normal forwards;
+}
+@keyframes e5QmRKu2ajZ4_to__to {
+    0% {
+        transform: translate(1760.7854px, 160px);
+    }
+    57.142857% {
+        transform: translate(1760.7854px, 160px);
+        animation-timing-function: cubic-bezier(0.42, 0, 0, 0.995);
+    }
+    100% {
+        transform: translate(1108.943135px, 159.999901px);
+    }
+}
+#e5QmRKu2ajZ7_to {
+    animation: e5QmRKu2ajZ7_to__to 2100ms linear 1 normal forwards;
+}
+@keyframes e5QmRKu2ajZ7_to__to {
+    0% {
+        transform: translate(719.5px, 160px);
+    }
+    57.142857% {
+        transform: translate(719.5px, 160px);
+        animation-timing-function: cubic-bezier(0.42, 0, 0, 1);
+    }
+    100% {
+        transform: translate(409.763407px, 160.000001px);
+    }
+}
+#e5QmRKu2ajZ9_to {
+    animation: e5QmRKu2ajZ9_to__to 2100ms linear 1 normal forwards;
+}
+@keyframes e5QmRKu2ajZ9_to__to {
+    0% {
+        transform: translate(-454.791px, -159.891px);
+    }
+    14.285714% {
+        transform: translate(-454.791px, -159.891px);
+        animation-timing-function: cubic-bezier(0.42, 0, 0.11, 1.02);
+    }
+    28.571429% {
+        transform: translate(-537.726288px, 157.585155px);
+    }
+    100% {
+        transform: translate(-537.726288px, 157.585155px);
+    }
+}
+#e5QmRKu2ajZ11_to {
+    animation: e5QmRKu2ajZ11_to__to 2100ms linear 1 normal forwards;
+}
+@keyframes e5QmRKu2ajZ11_to__to {
+    0% {
+        transform: translate(-579.763px, -159.891px);
+    }
+    28.571429% {
+        transform: translate(-579.763px, -159.891px);
+        animation-timing-function: cubic-bezier(0.42, 0, 0.11, 1.02);
+    }
+    42.857143% {
+        transform: translate(-658.755144px, 157.585155px);
+    }
+    100% {
+        transform: translate(-658.755144px, 157.585155px);
+    }
+}
+#e5QmRKu2ajZ13_to {
+    animation: e5QmRKu2ajZ13_to__to 2100ms linear 1 normal forwards;
+}
+@keyframes e5QmRKu2ajZ13_to__to {
+    0% {
+        transform: translate(-699.949px, -159.891px);
+    }
+    42.857143% {
+        transform: translate(-699.949px, -159.891px);
+        animation-timing-function: cubic-bezier(0.42, 0, 0.11, 1.02);
+    }
+    57.142857% {
+        transform: translate(-778.519273px, 157.585155px);
+    }
+    100% {
+        transform: translate(-778.519273px, 157.585155px);
+    }
+}
+#e5QmRKu2ajZ15_to {
+    animation: e5QmRKu2ajZ15_to__to 2100ms linear 1 normal forwards;
+}
+@keyframes e5QmRKu2ajZ15_to__to {
+    0% {
+        transform: translate(-211.744px, -162.533px);
+        animation-timing-function: cubic-bezier(0.42, 0, 0.11, 1.02);
+    }
+    14.285714% {
+        transform: translate(-300.773448px, 152.3013px);
+    }
+    100% {
+        transform: translate(-300.773448px, 152.3013px);
+    }
+}
+
+.fade-out {
+    animation: fadeOut 0.5s forwards;
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.react-draggable-dragging {
+}
+
+.react-draggable-dragged {
+}
+
+.card {
+}
+
+.titlebar {
+    -webkit-app-region: drag;
+}
+
+.titlebar-buttons {
+    -webkit-app-region: no-drag;
+}

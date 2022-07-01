@@ -1,0 +1,20 @@
+{
+  "name": "pit_wall_client",
+  "version": "0.1.0",
+  "description": "An electron client for iRacing drivers to stream their data to twitch viewers via the Gabir Motors Pit Wall",
+  "license": "MIT",
+  "author": {
+    "name": "Gabe Krahulik",
+    "email": "gabekrahulik@gmail.com",
+    "url": "https://github.com/LilSpartan"
+  },
+  "main": "./dist/main/main.js",
+  "scripts": {
+    "electron-rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",
+    "postinstall": "npm run electron-rebuild && npm run link-modules",
+    "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts"
+  },
+  "dependencies": {
+    "node-irsdk-2021": "^0.0.1"
+  }
+}
