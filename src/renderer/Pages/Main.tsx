@@ -48,7 +48,7 @@ const Main = () => {
     const [doNoTwitchSetup, setDoNoTwitchSetup] = useState(false);
     const [userData, setUserData] = useState(null);
     const [name, setName] = useState("");
-    const [version, setVersion] = useState('0.0.0');
+    const [version, setVersion] = useState('');
     const [updateState, setUpdateState] = useState<UpdateState>('up_to_date');
 
     useEffect(() => {
@@ -156,9 +156,9 @@ const Main = () => {
                         <Card title="Setup">
                             <h1 className = "text-center text-3xl font-extrabold mb-4">Setup</h1>
                             <Button block click = {openTwitchAuth}>With Twitch Integration</Button>
-                            <Button block click = {() => {
+                            {/* <Button block click = {() => {
                                 setDoNoTwitchSetup(true);
-                            }}>Without Twitch Integration</Button>
+                            }}>Without Twitch Integration</Button> */}
                         </Card>
                     ) : <div />}
 

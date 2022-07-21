@@ -13,18 +13,97 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, session } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import IracingClient from 'node-irsdk-2021';
 import io from 'socket.io-client';
+import RPC from 'discord-rpc';
 import axios from 'axios';
 import settings from 'electron-settings';
-import { Connection } from 'types/interfaces';
+import {
+    Connection,
+    QualifyingResult,
+    RPCActivity,
+    Session,
+    IRSDKSession,
+    Driver,
+} from 'types/interfaces';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
 console.log(`Setting File: ${settings.file()}`);
+
+const clientId = '994418116090142830';
+
+const rpcClient = new RPC.Client({ transport: 'ipc' });
+let RPCTime = null;
+
+const updateRPC = async () => {
+    console.log('Updating RPC');
+
+    if (RPCTime === null || RPCTime.connection !== connection) {
+        RPCTime = {
+            timestamp: Date.now(),
+            connection,
+        };
+    }
+
+    if (!rpcClient) {
+        console.log('No RPC Client');
+        return;
+    }
+
+    let RPCDetails;
+    switch (sessionInfo.session.type) {
+        case 'LOADING':
+            RPCDetails = 'Running the Pit Wall';
+            break;
+        case 'PRACTICE':
+            RPCDetails = 'Running the Pit Wall (In Practice)';
+            break;
+        case 'QUALIFY':
+            RPCDetails = 'Running the Pit Wall (In Qualifying)';
+            break;
+        case 'RACE':
+            RPCDetails = 'Running the Pit Wall (In a Race)';
+            break;
+        default:
+            RPCDetails = 'Running the Pit Wall';
+            break;
+    }
+
+    const activity: RPCActivity = {
+        details:
+            connection === 'connected' ? RPCDetails : 'Running the Pit Wall',
+        state:
+            connection === 'connected'
+                ? 'Currently Racing'
+                : 'Not Currently Racing',
+        startTimestamp: RPCTime !== null ? RPCTime.timestamp : Date.now(),
+        largeImageKey: 'm_logo',
+        largeImageText: 'Using the Gabir Motors Pit Wall',
+        smallImageKey: connection === 'connected' ? 'in_race' : 'not_in_race',
+        smallImageText:
+            connection === 'connected'
+                ? 'Currently Racing'
+                : 'Not Currently Racing',
+        instance: false,
+    };
+
+    console.log(hasCompletedSetup, 'setup');
+
+    if (hasCompletedSetup) {
+        activity.buttons = [
+            {
+                label: `View ${options.channel}'s Pit Wall`,
+                url: `https://pitwall.gabirmotors.com/${options.channel}`,
+            },
+        ];
+    }
+
+    rpcClient.setActivity(activity);
+};
 
 const Iracing = IracingClient.getInstance();
 const Streaming = io('https://streaming.gabirmotors.com');
@@ -47,9 +126,11 @@ const options = {
     isStreamer: true,
 };
 
-let sessionRacers = [];
-let sessionInfo = {
+let sessionRacers: Driver[] = [];
+let sessionInfo: Session = {
     flags: [],
+    isPALeagueRace: false,
+    focusedCarIndex: 1,
     session: {
         number: 0,
         type: 'PRACTICE',
@@ -263,13 +344,14 @@ const createWindow = async () => {
             }
         }
 
-        Iracing.on('SessionInfo', (evt) => {
+        Iracing.on('SessionInfo', (evt: IRSDKSession) => {
             if (connection !== 'connected') {
                 connection = 'connected';
                 mainWindow.webContents.send('connection', connection);
             }
             const drivers = evt.data.DriverInfo.Drivers;
 
+            sessionInfo.isPALeagueRace = evt.data.WeekendInfo.LeagueID === 4778;
             sessionInfo.session.type =
                 evt.data.SessionInfo.Sessions[
                     sessionInfo.session.number
@@ -299,13 +381,32 @@ const createWindow = async () => {
             for (let i = 0; i < drivers.length - 1; i++) {
                 const driver = drivers[i];
 
+                let qualifyingResult: QualifyingResult = null;
+                const qualifyingResults = evt.data.QualifyResultsInfo?.Results;
+
+                if (
+                    qualifyingResults !== null &&
+                    qualifyingResults !== undefined
+                ) {
+                    for (let j = 0; j < qualifyingResults.length; j++) {
+                        if (qualifyingResults[j].CarIdx === driver.CarIdx) {
+                            qualifyingResult = {
+                                position: qualifyingResults[j].Position,
+                                classPosition:
+                                    qualifyingResults[j].ClassPosition,
+                                fastestLap: qualifyingResults[j].FastestLap,
+                                fastestTime: qualifyingResults[j].FastestTime,
+                            };
+                        }
+                    }
+                }
+
                 if (!driver.CarIsPaceCar) {
                     sessionRacers.push({
                         carIndex: driver.CarIdx,
                         name: driver.UserName,
                         userID: driver.UserID,
                         carNumber: driver.CarNumber,
-                        classID: driver.CarClassID,
                         isPaceCar: driver.CarIsPaceCar === 1,
                         raceData: {
                             position: 0,
@@ -331,6 +432,13 @@ const createWindow = async () => {
                             },
                         },
                         flags: [],
+                        qualifyingResult,
+                        class: {
+                            car: driver.CarScreenNameShort,
+                            color: driver.CarClassColor.toString(16),
+                            id: driver.CarClassID,
+                        },
+                        teamName: driver.TeamName,
                     });
                 }
             }
@@ -351,6 +459,8 @@ const createWindow = async () => {
             options.sessionNum = evt.values.SessionNum;
             sessionInfo = {
                 flags: evt.values.SessionFlags,
+                isPALeagueRace: sessionInfo.isPALeagueRace,
+                focusedCarIndex: evt.values.CamCarIdx,
                 session: {
                     number: evt.values.SessionNum,
                     type: sessionInfo.session.type,
@@ -504,3 +614,14 @@ autoUpdater.on('update-available', () => {
 autoUpdater.on('update-downloaded', () => {
     mainWindow.webContents.send('update_downloaded');
 });
+
+rpcClient.on('ready', () => {
+    updateRPC();
+
+    setInterval(() => {
+        updateRPC();
+    }, 10000);
+});
+
+rpcClient.login({ clientId }).catch(console.error);
+console.log(rpcClient);

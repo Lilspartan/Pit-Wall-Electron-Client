@@ -1,6 +1,6 @@
 {
   "name": "pit_wall_client",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "An electron client for iRacing drivers to stream their data to twitch viewers via the Gabir Motors Pit Wall",
   "license": "MIT",
   "author": {

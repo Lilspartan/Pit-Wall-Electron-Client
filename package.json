@@ -1,7 +1,7 @@
 {
   "description": "An electron client for iRacing drivers to stream their data to twitch viewers via the Gabir Motors Pit Wall",
   "homepage": "https://pitwall.gabirmotors.com",
-  "version": "0.2.0",
+  "version": "0.5.0",
   "bugs": {
     "url": "https://github.com/Lilspartan/Pit-Wall-Electron-Client/issues"
   },
@@ -30,7 +30,7 @@
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "test": "jest",
-    "public": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish always"
+    "deploy": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish always"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -94,6 +94,7 @@
   "dependencies": {
     "axios": "^0.27.2",
     "body-scroll-lock": "^4.0.0-beta.0",
+    "discord-rpc": "^4.0.1",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.7",
     "electron-settings": "^4.0.2",
