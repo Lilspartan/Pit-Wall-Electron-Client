@@ -1,7 +1,7 @@
 {
   "description": "An electron client for iRacing drivers to stream their data to twitch viewers via the Gabir Motors Pit Wall",
   "homepage": "https://pitwall.gabirmotors.com",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "bugs": {
     "url": "https://github.com/Lilspartan/Pit-Wall-Electron-Client/issues"
   },
@@ -92,8 +92,10 @@
     }
   },
   "dependencies": {
+    "@types/classnames": "^2.3.1",
     "axios": "^0.27.2",
     "body-scroll-lock": "^4.0.0-beta.0",
+    "classnames": "^2.3.1",
     "discord-rpc": "^4.0.1",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.7",

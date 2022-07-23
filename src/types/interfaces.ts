@@ -31,6 +31,17 @@ export interface Driver {
     qualifyingResult: QualifyingResult | null;
     class: CarClass;
     teamName: string;
+    license: DriverLicense;
+    isSpectator: boolean;
+    isAI: boolean;
+}
+
+export interface DriverLicense {
+    iRating: number;
+    licenseLevel: number;
+    licenseSubLevel: number;
+    licenseName: string;
+    licenseColor: string | null;
 }
 
 export interface CarClass {
@@ -125,6 +136,8 @@ export interface DriverData {
         remaining: number;
         percent: number;
     };
+    carIndex: number;
+    driver: Driver;
 }
 
 export interface DismissedCard {

@@ -159,6 +159,8 @@ let driverData = {
         right: { front: 0, rear: 0 },
     },
     fuel: { remaining: 0, percent: 0 },
+    carIndex: 0,
+    driver: null,
 };
 
 checkSettings();
@@ -279,9 +281,12 @@ const createWindow = async () => {
                     mainWindow.webContents.send('user_data', options);
                     break;
                 case 'app_version':
-                    event.sender.send('app_version', {
-                        version: app.getVersion(),
+                    mainWindow.webContents.send('app_version', {
+                        version: '0.5.1',
                     });
+                    break;
+                case 'open_link':
+                    shell.openExternal(args[1]);
                     break;
                 default:
                     break;
@@ -349,6 +354,7 @@ const createWindow = async () => {
                 connection = 'connected';
                 mainWindow.webContents.send('connection', connection);
             }
+
             const drivers = evt.data.DriverInfo.Drivers;
 
             sessionInfo.isPALeagueRace = evt.data.WeekendInfo.LeagueID === 4778;
@@ -402,7 +408,7 @@ const createWindow = async () => {
                 }
 
                 if (!driver.CarIsPaceCar) {
-                    sessionRacers.push({
+                    const _d = {
                         carIndex: driver.CarIdx,
                         name: driver.UserName,
                         userID: driver.UserID,
@@ -439,7 +445,22 @@ const createWindow = async () => {
                             id: driver.CarClassID,
                         },
                         teamName: driver.TeamName,
-                    });
+                        license: {
+                            iRating: driver.IRating,
+                            licenseLevel: driver.LicLevel,
+                            licenseSubLevel: driver.LicSubLevel,
+                            licenseName: driver.LicString,
+                            licenseColor: driver.LicColor.toString(16),
+                        },
+                        isSpectator: driver.IsSpectator === 1,
+                        isAI: driver.CarIsAI === 1,
+                    };
+                    sessionRacers.push(_d);
+
+                    if (driver.CarIdx === evt.data.DriverInfo.DriverCarIdx) {
+                        driverData.carIndex = evt.data.DriverInfo.DriverCarIdx;
+                        driverData.driver = _d;
+                    }
                 }
             }
 
@@ -517,6 +538,8 @@ const createWindow = async () => {
                     remaining: evt.values.FuelLevel,
                     percent: evt.values.FuelLevelPct,
                 },
+                carIndex: driverData.carIndex,
+                driver: driverData.driver,
             };
 
             if (mainWindow) {
