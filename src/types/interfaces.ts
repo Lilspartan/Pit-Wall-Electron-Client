@@ -34,6 +34,17 @@ export interface Driver {
     license: DriverLicense;
     isSpectator: boolean;
     isAI: boolean;
+    estTimeIntoLap: number;
+}
+
+export interface LapData {
+    lapNumber: number;
+    fuelAtStartPct: number;
+    fuelAtStartLiters: number;
+    fuelUsedPct: number;
+    fuelUsedLiters: number;
+    lapTime: number;
+    sessionType: SessionType;
 }
 
 export interface DriverLicense {
@@ -138,6 +149,7 @@ export interface DriverData {
     };
     carIndex: number;
     driver: Driver;
+    laps: LapData[];
 }
 
 export interface DismissedCard {
@@ -166,6 +178,17 @@ export enum Type {
 
 export interface Options {
     channel: string;
+    fuelIsPublic: boolean;
+    password: string;
+    profile_icon: string;
+    charity?: CharityOptions | null;
+}
+
+export interface CharityOptions {
+    link: string;
+    description: string | null;
+    name: string;
+    callToAction: string;
 }
 
 type RPCButton = {

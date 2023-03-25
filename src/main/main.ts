@@ -1,3 +1,7 @@
+/* eslint-disable prefer-const */
+/* eslint-disable no-bitwise */
+/* eslint-disable prefer-destructuring */
+/* eslint-disable no-case-declarations */
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -12,8 +16,9 @@
  * When running `npm run build` or `npm run build:main`, this file is compiled to
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
+
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain, session } from 'electron';
+import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import IracingClient from 'node-irsdk-2021';
@@ -28,11 +33,29 @@ import {
     Session,
     IRSDKSession,
     Driver,
+    LapData,
 } from 'types/interfaces';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
-console.log(`Setting File: ${settings.file()}`);
+function decimalColorToHTMLcolor(number) {
+    let intnumber = number - 0;
+    let red: number;
+    let green: number;
+    let blue: number;
+    const template = '#000000';
+    red = (intnumber & 0x0000ff) << 16;
+    green = intnumber & 0x00ff00;
+    blue = (intnumber & 0xff0000) >>> 16;
+    intnumber = red | green | blue;
+    let HTMLcolor = intnumber.toString(16);
+    HTMLcolor = template.substring(0, 7 - HTMLcolor.length) + HTMLcolor;
+    return HTMLcolor;
+}
+
+console.log(`Settings File: ${settings.file()}`);
+
+let clientUpToDate = true;
 
 const clientId = '994418116090142830';
 
@@ -91,13 +114,11 @@ const updateRPC = async () => {
         instance: false,
     };
 
-    console.log(hasCompletedSetup, 'setup');
-
     if (hasCompletedSetup) {
         activity.buttons = [
             {
                 label: `View ${options.channel}'s Pit Wall`,
-                url: `https://pitwall.gabirmotors.com/${options.channel}`,
+                url: `https://pitwall.gabirmotors.com/user/${options.channel}`,
             },
         ];
     }
@@ -116,6 +137,12 @@ const checkSettings = async () => {
     if (hasCompletedSetup) {
         options.channel = (await settings.get('channel')) as string;
         options.isStreamer = (await settings.get('isStreamer')) as boolean;
+        options.fuelIsPublic = (await settings.get('fuelIsPublic')) as boolean;
+        options.password = (await settings.get('password')) as string;
+        options.profile_icon = (await settings.get('profile_icon')) as string;
+
+        if (options.fuelIsPublic === undefined) options.fuelIsPublic = false;
+        if (options.password === undefined) options.password = 'abcdef';
     }
 };
 
@@ -124,6 +151,10 @@ const options = {
     sessionNum: 0,
     channel: '',
     isStreamer: true,
+    fuelIsPublic: false,
+    password: 'abcdef',
+    profile_icon: 'none',
+    charity: null,
 };
 
 let sessionRacers: Driver[] = [];
@@ -153,7 +184,7 @@ let sessionInfo: Session = {
     },
 };
 
-let driverData = {
+const driverData = {
     tiresRemaining: {
         left: { front: 0, rear: 0 },
         right: { front: 0, rear: 0 },
@@ -161,6 +192,7 @@ let driverData = {
     fuel: { remaining: 0, percent: 0 },
     carIndex: 0,
     driver: null,
+    laps: [],
 };
 
 checkSettings();
@@ -237,6 +269,8 @@ const createWindow = async () => {
         });
         const authUrl =
             'https://id.twitch.tv/oauth2/authorize?client_id=6gfpjegdkmcmepffbvh4vfp8s9vd13&redirect_uri=https://gabirmotors.com/vote&response_type=token+id_token&scope=user:read:email+openid&claims={ "id_token": { "email": null, "email_verified": null }, "userinfo": { "picture": null, "email": null, "preferred_username": null } }';
+
+        // TODO: Add different IPC channels
         ipcMain.on('ipc-example', async (event, args) => {
             console.log(args);
 
@@ -288,6 +322,26 @@ const createWindow = async () => {
                 case 'open_link':
                     shell.openExternal(args[1]);
                     break;
+                case 'toggle_fuel_public_status':
+                    const currentFuelStatus = await settings.get(
+                        'fuelIsPublic'
+                    );
+                    await settings.set('fuelIsPublic', !currentFuelStatus);
+                    options.fuelIsPublic = !currentFuelStatus;
+                    mainWindow.webContents.send('user_data', options);
+                    break;
+                case 'change_password':
+                    await settings.set('password', args[1]);
+                    options.password = args[1];
+                    mainWindow.webContents.send('user_data', options);
+                    break;
+                case 'charity_settings':
+                    if (args[2]) {
+                        options.charity = args[1];
+                    } else {
+                        options.charity = null;
+                    }
+                    break;
                 default:
                     break;
             }
@@ -299,7 +353,6 @@ const createWindow = async () => {
             'will-navigate',
             async function (event, newUrl) {
                 const token = newUrl.split('access_token=')[1].split('&id')[0];
-                console.log(`Stuff: ${token}`);
 
                 const userRes = await axios.get(
                     'https://id.twitch.tv/oauth2/userinfo',
@@ -316,9 +369,15 @@ const createWindow = async () => {
 
                 await settings.set('channel', userData.preferred_username);
                 await settings.set('isStreamer', true);
+                await settings.set('fuelIsPublic', false);
+                await settings.set('password', '');
+                await settings.set('profile_icon', userData.picture);
 
                 options.channel = userData.preferred_username;
                 options.isStreamer = true;
+                options.fuelIsPublic = false;
+                options.password = '';
+                options.profile_icon = userData.picture;
 
                 hasCompletedSetup = true;
                 mainWindow.webContents.send(
@@ -450,10 +509,13 @@ const createWindow = async () => {
                             licenseLevel: driver.LicLevel,
                             licenseSubLevel: driver.LicSubLevel,
                             licenseName: driver.LicString,
-                            licenseColor: driver.LicColor.toString(16),
+                            licenseColor: decimalColorToHTMLcolor(
+                                driver.LicColor
+                            ),
                         },
                         isSpectator: driver.IsSpectator === 1,
                         isAI: driver.CarIsAI === 1,
+                        estTimeIntoLap: 0,
                     };
                     sessionRacers.push(_d);
 
@@ -521,26 +583,75 @@ const createWindow = async () => {
                     evt.values.CarIdxFastRepairsUsed[_idx];
                 sessionRacers[i].raceData.lapPercent =
                     evt.values.CarIdxLapDistPct[_idx];
+                sessionRacers[i].estTimeIntoLap =
+                    evt.values.CarIdxEstTime[_idx];
             }
 
-            driverData = {
-                tiresRemaining: {
-                    left: {
-                        front: evt.values.LFTiresAvailable,
-                        rear: evt.values.LRTiresAvailable,
-                    },
-                    right: {
-                        front: evt.values.RFTiresAvailable,
-                        rear: evt.values.RRTiresAvailable,
-                    },
+            driverData.tiresRemaining = {
+                left: {
+                    front: evt.values.LFTiresAvailable,
+                    rear: evt.values.LRTiresAvailable,
                 },
-                fuel: {
-                    remaining: evt.values.FuelLevel,
-                    percent: evt.values.FuelLevelPct,
+                right: {
+                    front: evt.values.RFTiresAvailable,
+                    rear: evt.values.RRTiresAvailable,
                 },
-                carIndex: driverData.carIndex,
-                driver: driverData.driver,
             };
+            driverData.fuel = {
+                remaining: evt.values.FuelLevel,
+                percent: evt.values.FuelLevelPct,
+            };
+
+            if (driverData.laps.length) {
+                if (
+                    driverData.laps[0].lapNumber <
+                    driverData.driver.raceData.lap
+                ) {
+                    const _lap: LapData = {
+                        lapNumber: driverData.driver.raceData.lap,
+                        fuelAtStartPct: driverData.fuel.percent,
+                        fuelAtStartLiters: driverData.fuel.remaining,
+                        lapTime: -1,
+                        fuelUsedLiters: -1,
+                        fuelUsedPct: -1,
+                        sessionType: sessionInfo.session.type,
+                    };
+
+                    const _workingLap = driverData.laps.shift();
+
+                    _workingLap.lapTime = driverData.driver.lapTimes.last;
+                    _workingLap.fuelUsedLiters =
+                        _workingLap.fuelAtStartLiters -
+                        driverData.fuel.remaining;
+                    _workingLap.fuelUsedPct =
+                        _workingLap.fuelAtStartPct - driverData.fuel.percent;
+
+                    driverData.laps.unshift(_workingLap);
+                    driverData.laps.unshift(_lap);
+                } else if (
+                    driverData.laps[0].lapNumber ===
+                    driverData.driver.raceData.lap
+                ) {
+                    driverData.laps[0].lapTime = -1;
+                } else if (
+                    driverData.laps[0].lapNumber >
+                    driverData.driver.raceData.lap
+                ) {
+                    // driverData.laps = [];
+                }
+            } else if (driverData.driver) {
+                const _lap: LapData = {
+                    lapNumber: driverData.driver.raceData.lap,
+                    fuelAtStartPct: driverData.fuel.percent,
+                    fuelAtStartLiters: driverData.fuel.remaining,
+                    lapTime: -1,
+                    fuelUsedLiters: -1,
+                    fuelUsedPct: -1,
+                    sessionType: sessionInfo.session.type,
+                };
+
+                driverData.laps.unshift(_lap);
+            }
 
             if (mainWindow) {
                 mainWindow.webContents.send('telemetry_update', {
@@ -552,7 +663,12 @@ const createWindow = async () => {
         });
 
         setInterval(() => {
-            if (!hasCompletedSetup || sessionRacers.length < 1) return;
+            if (
+                !hasCompletedSetup ||
+                sessionRacers.length < 1 ||
+                !clientUpToDate
+            )
+                return;
             Streaming.emit(
                 'standings',
                 JSON.stringify({
@@ -562,6 +678,10 @@ const createWindow = async () => {
                     options: {
                         channel: options.channel,
                         isStreamer: options.isStreamer,
+                        fuelIsPublic: options.fuelIsPublic,
+                        password: options.password,
+                        profile_icon: options.profile_icon,
+                        charity: options.charity,
                     },
                 })
             );
@@ -577,6 +697,7 @@ const createWindow = async () => {
     Iracing.on('Connected', () => {
         if (connection !== 'connected') connection = 'connected';
         console.log('CONNECTED');
+        driverData.laps = [];
         if (mainWindow) {
             mainWindow.webContents.send('connection', connection);
         }
@@ -592,6 +713,8 @@ const createWindow = async () => {
 
     mainWindow.on('closed', () => {
         mainWindow = null;
+
+        app.quit();
     });
 
     const menuBuilder = new MenuBuilder(mainWindow);
@@ -633,9 +756,11 @@ app.whenReady()
 
 autoUpdater.on('update-available', () => {
     mainWindow.webContents.send('update_available');
+    clientUpToDate = false;
 });
 autoUpdater.on('update-downloaded', () => {
     mainWindow.webContents.send('update_downloaded');
+    clientUpToDate = false;
 });
 
 rpcClient.on('ready', () => {

@@ -41,7 +41,7 @@ const LoadingIcon = ({ loading }: { loading: boolean }) => {
                 min-h-screen
                 h-full
                 absolute 
-                z-50 
+                z-40 
                 overflow-hidden 
                 ${fade ? 'fade-out ' : ''}
             `}

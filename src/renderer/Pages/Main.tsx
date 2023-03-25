@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable no-console */
 /* eslint-disable no-nested-ternary */
 /* eslint-disable jsx-a11y/no-static-element-interactions */
@@ -14,6 +15,7 @@ import {
   Driver,
   DriverData,
   Connection,
+  CharityOptions,
 } from '../../types/interfaces';
 import { Loading, Card, Button, Alert } from '../Components';
 
@@ -44,6 +46,7 @@ type UpdateState =
 const Main = () => {
     const [session, setSession] = useState<Session | null>(null);
     const [drivers, setDrivers] = useState<Driver[] | null>(null);
+    const [driverData, setDriverData] = useState<DriverData | null>(null);
     const [connection, setConnection] = useState<Connection>('connecting');
     const [loading, setLoading] = useState(true);
     const [showSetup, setShowSetup] = useState(true);
@@ -52,6 +55,13 @@ const Main = () => {
     const [name, setName] = useState("");
     const [version, setVersion] = useState('Getting Version');
     const [updateState, setUpdateState] = useState<UpdateState>('up_to_date');
+    const [doCharity, setDoCharity] = useState(false);
+    const [charitySettings, setCharitySettings] = useState<CharityOptions | null>({
+        name: "",
+        description: "",
+        link: "",
+        callToAction: "Donate",
+    });
 
     useEffect(() => {
         window.electron.ipcRenderer.on(
@@ -68,6 +78,7 @@ const Main = () => {
             (data: IPCTelemetryUpdate) => {
                 setSession(data.info);
                 setDrivers(data.drivers);
+                setDriverData(data.driverData);
 
                 // console.log(data);
             }
@@ -109,6 +120,12 @@ const Main = () => {
         window.electron.ipcRenderer.sendMessage('ipc-example', [ 'app_version' ])
     }, []);
 
+    useEffect(() => {
+        if (charitySettings.name !== "") {
+            window.electron.ipcRenderer.sendMessage('ipc-example', [ 'charity_settings', charitySettings, doCharity ])
+        }
+    }, [doCharity, charitySettings])
+
     const openTwitchAuth = () => {
         if (typeof window !== "undefined") {
             window.electron.ipcRenderer.sendMessage('ipc-example', [ 'twitch_auth' ]);
@@ -117,12 +134,12 @@ const Main = () => {
 
     return (
         <>
-            {updateState === 'update_available' ? (
+            {updateState === 'update_downloaded' ? (
                 <div className="flex flex-row justify-center w-full">
                     <div className="p-4 fixed bg-light-card-handle text-black z-40 m-4 rounded-lg flex flex-row bottom-8">
                         <div>
-                            <span className="pr-2 font-bold">Update Available</span>
-                            <span>An update is available for the Pit Wall</span>
+                            <span className="pr-2 font-bold">Update Downloaded</span>
+                            <span>An update has been downloaded for the Pit Wall, restart the Pit Wall to install the update</span>
                         </div>
 
                         <div>
@@ -134,16 +151,25 @@ const Main = () => {
                         </div>
                     </div>
                 </div>
+            ) : updateState === 'update_available' ? (
+                <div className="flex flex-row justify-center w-full">
+                    <div className="p-4 fixed bg-light-card-handle text-black z-40 m-4 rounded-lg flex flex-row bottom-8">
+                        <div>
+                            <span className="pr-2 font-bold">Update Available</span>
+                            <span>An update is available for the Pit Wall and will be downloaded automatically</span>
+                        </div>
+                    </div>
+                </div>
             ) : (
                 <div />
             )}
 
             <div className = "h-12 titlebar bg-dark-card w-full flex flex-row justify-between">
                 <div className = "text-white acumin my-auto text-3xl ml-4 align-middle no-select">
-                    Pit Wall Client v0.6.0
+                    Pit Wall Client v0.9.0
                 </div>
 
-                <div className="text-white flex flex-row-reverse text-3xl my-auto mr-4 titlebar-buttons">
+                <div className="text-white flex flex-row-reverse text-3xl my-auto mr-4 titlebar-buttons z-50">
                     <div><CgClose className = "cursor-pointer mx-2" id = "close" onClick = {() => { window.electron.ipcRenderer.sendMessage('ipc-example', [ 'close' ]) }} /></div>
                     <div><CgMaximize className = "cursor-pointer mx-2" id = "maximize" onClick = {() => { window.electron.ipcRenderer.sendMessage('ipc-example', [ 'maximize' ]) }} /></div>
                     <div><CgMinimize className = "cursor-pointer mx-2" id = "minimize" onClick = {() => { window.electron.ipcRenderer.sendMessage('ipc-example', [ 'minimize' ]) }} /></div>
@@ -204,12 +230,60 @@ const Main = () => {
                                         setDoNoTwitchSetup(false);
                                     }}>Redo Setup</Button>
 
+                                    <div id="options">
+                                        <Button block click = {() => {
+                                            window.electron.ipcRenderer.sendMessage('ipc-example', [ 'toggle_fuel_public_status' ])
+                                        }}>{userData.fuelIsPublic ? 'Fuel Data: Public' : 'Fuel Data: Private'}</Button>    
+
+                                       <div className = "mt-4">
+                                            <label htmlFor="password" className = "mt-4 font-bold text-lg">Private Page Password:</label>
+                                            <input name = "password" id = "password" className = "block font-bold text-lg rounded-lg bg-dark-card-handle p-2 w-full" type="text" placeholder='Password for Private Pages' value = {userData.password} onChange = {(e) => {
+                                                window.electron.ipcRenderer.sendMessage('ipc-example', [ 'change_password', e.target.value ]) 
+                                            }} />
+                                       </div>
+                                    </div>
+
                                     <h4 className = "mt-16 text-xl opacity-50">Overlays Coming <span className = "font-bold">Soon</span></h4>
                                 </div>
 
                                 <div>
-                                    <h2 className = "text-3xl"><span className = "font-extrabold">{ session.track.name }</span></h2>
-                                    <h3 className = "text-2xl mt-4"><span className = "font-bold">{ drivers.length }</span> Drivers found in your session</h3>
+                                    <h2 className = "text-3xl"><span className = "font-extrabold">{ session !== null ? session.track.name : "Not in a Race" }</span></h2>
+                                    <h3 className = "text-2xl mt-4"><span className = "font-bold">{ drivers !== null ? drivers.length : "0" }</span> Drivers found in your session</h3>
+                                
+                                    {/* <pre>
+                                        {JSON.stringify(driverData.laps, null, 4)}
+                                    </pre> */}
+
+                                    <div className = "mt-16">
+                                        <label htmlFor = "charityCheckBox" className = "mr-4">Show Charity Info?</label>
+                                        <input id = "charityCheckBox" type = "checkbox" checked = { doCharity } onChange = {(e) => {
+                                            setDoCharity(e.target.checked);
+                                        }} />
+
+                                        { doCharity && (
+                                            <div className = "mt-4">
+                                                <div className = "mt-2">
+                                                    <label htmlFor = "charityName">Campaign Name</label>
+                                                    <input value = { charitySettings.name } onChange = {(e) => {
+                                                        setCharitySettings({
+                                                            ...charitySettings,
+                                                            name: e.target.value
+                                                        })
+                                                    }} id = "charityName" type = "text" className = "block font-bold text-lg rounded-lg bg-dark-card-handle p-2 w-full"/>
+                                                </div>
+
+                                                <div className = "mt-2">
+                                                    <label htmlFor = "link">Campaign Link</label>
+                                                    <input value = { charitySettings.link } onChange = {(e) => {
+                                                        setCharitySettings({
+                                                            ...charitySettings,
+                                                            link: e.target.value
+                                                        })
+                                                    }} id = "link" type = "url" className = "block font-bold text-lg rounded-lg bg-dark-card-handle p-2 w-full"/>
+                                                </div>
+                                            </div>
+                                        ) }
+                                    </div>
                                 </div>
                             </div>
                         </div>
