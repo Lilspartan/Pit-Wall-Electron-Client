@@ -166,7 +166,7 @@ const Main = () => {
 
             <div className = "h-12 titlebar bg-dark-card w-full flex flex-row justify-between">
                 <div className = "text-white acumin my-auto text-3xl ml-4 align-middle no-select">
-                    Pit Wall Client v0.9.0
+                    Pit Wall Client v1.0.0
                 </div>
 
                 <div className="text-white flex flex-row-reverse text-3xl my-auto mr-4 titlebar-buttons z-50">

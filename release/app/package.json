@@ -1,6 +1,6 @@
 {
   "name": "pit_wall_client",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "An electron client for iRacing drivers to stream their data to twitch viewers via the Gabir Motors Pit Wall",
   "license": "MIT",
   "author": {
@@ -15,6 +15,8 @@
     "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts"
   },
   "dependencies": {
-    "node-irsdk-2021": "^0.0.1"
+    "discord-rpc": "^4.0.1",
+    "iracing-sdk-js": "^1.0.1",
+    "node-irsdk-2023": "^2.1.8"
   }
 }

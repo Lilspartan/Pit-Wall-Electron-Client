@@ -21,7 +21,7 @@ import path from 'path';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import IracingClient from 'node-irsdk-2021';
+import IracingClient from 'iracing-sdk-js';
 import io from 'socket.io-client';
 import RPC from 'discord-rpc';
 import axios from 'axios';
@@ -127,7 +127,7 @@ const updateRPC = async () => {
 };
 
 const Iracing = IracingClient.getInstance();
-const Streaming = io('https://streaming.gabirmotors.com');
+const Streaming = io('http://pitwall.gabirmotors.com');
 
 let hasCompletedSetup = false;
 let connection: Connection = 'connecting';
@@ -193,6 +193,8 @@ const driverData = {
     carIndex: 0,
     driver: null,
     laps: [],
+    firstRPM: 0,
+    shiftRPM: 0,
 };
 
 checkSettings();
@@ -518,6 +520,11 @@ const createWindow = async () => {
                         estTimeIntoLap: 0,
                     };
                     sessionRacers.push(_d);
+
+                    driverData.firstRPM =
+                        evt.data.DriverInfo.DriverCarSLFirstRPM;
+                    driverData.shiftRPM =
+                        evt.data.DriverInfo.DriverCarSLShiftRPM;
 
                     if (driver.CarIdx === evt.data.DriverInfo.DriverCarIdx) {
                         driverData.carIndex = evt.data.DriverInfo.DriverCarIdx;

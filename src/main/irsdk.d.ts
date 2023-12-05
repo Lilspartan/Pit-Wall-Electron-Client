@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-declare module 'node-irsdk-2021' {
+declare module 'node-irsdk-2023' {
     interface TelemetryData {
         timestamp: Date;
         values: {

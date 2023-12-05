@@ -150,6 +150,8 @@ export interface DriverData {
     carIndex: number;
     driver: Driver;
     laps: LapData[];
+    firstRPM: number;
+    shiftRPM: number;
 }
 
 export interface DismissedCard {
